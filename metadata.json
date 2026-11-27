@@ -1,0 +1,6 @@
+{
+  "name": "免分割 RGB-D 主动运动手眼标定平台",
+  "description": "基于 Franka Emika Panda、MuJoCo WASM 与虚拟 RealSense D435i 的免分割 RGB-D 主动运动手眼标定 3D 科研仿真与消融实验平台。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

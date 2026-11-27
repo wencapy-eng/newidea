@@ -1,0 +1,265 @@
+{
+  "source": "google-deepmind/mujoco_menagerie universal_robots_ur5e",
+  "totalVertices": 98666,
+  "totalTriangles": 121735,
+  "meshes": [
+    {
+      "body": "base",
+      "material": "black",
+      "vertexCount": 2541,
+      "indexCount": 6720,
+      "indexType": "u16",
+      "posOffset": 0,
+      "normOffset": 30492,
+      "idxOffset": 45740
+    },
+    {
+      "body": "base",
+      "material": "jointgray",
+      "vertexCount": 2294,
+      "indexCount": 7794,
+      "indexType": "u16",
+      "posOffset": 59180,
+      "normOffset": 86708,
+      "idxOffset": 100472
+    },
+    {
+      "body": "shoulder_link",
+      "material": "urblue",
+      "vertexCount": 8038,
+      "indexCount": 34305,
+      "indexType": "u16",
+      "posOffset": 116060,
+      "normOffset": 212516,
+      "idxOffset": 260744
+    },
+    {
+      "body": "shoulder_link",
+      "material": "black",
+      "vertexCount": 2367,
+      "indexCount": 6804,
+      "indexType": "u16",
+      "posOffset": 329356,
+      "normOffset": 357760,
+      "idxOffset": 371964
+    },
+    {
+      "body": "shoulder_link",
+      "material": "jointgray",
+      "vertexCount": 6979,
+      "indexCount": 28740,
+      "indexType": "u16",
+      "posOffset": 385572,
+      "normOffset": 469320,
+      "idxOffset": 511196
+    },
+    {
+      "body": "upper_arm_link",
+      "material": "linkgray",
+      "vertexCount": 588,
+      "indexCount": 1860,
+      "indexType": "u16",
+      "posOffset": 568676,
+      "normOffset": 575732,
+      "idxOffset": 579260
+    },
+    {
+      "body": "upper_arm_link",
+      "material": "black",
+      "vertexCount": 4385,
+      "indexCount": 12765,
+      "indexType": "u16",
+      "posOffset": 582980,
+      "normOffset": 635600,
+      "idxOffset": 661912
+    },
+    {
+      "body": "upper_arm_link",
+      "material": "jointgray",
+      "vertexCount": 12927,
+      "indexCount": 43410,
+      "indexType": "u16",
+      "posOffset": 687444,
+      "normOffset": 842568,
+      "idxOffset": 920132
+    },
+    {
+      "body": "upper_arm_link",
+      "material": "urblue",
+      "vertexCount": 16198,
+      "indexCount": 62262,
+      "indexType": "u16",
+      "posOffset": 1006952,
+      "normOffset": 1201328,
+      "idxOffset": 1298516
+    },
+    {
+      "body": "forearm_link",
+      "material": "urblue",
+      "vertexCount": 4768,
+      "indexCount": 19620,
+      "indexType": "u16",
+      "posOffset": 1423040,
+      "normOffset": 1480256,
+      "idxOffset": 1508864
+    },
+    {
+      "body": "forearm_link",
+      "material": "linkgray",
+      "vertexCount": 359,
+      "indexCount": 963,
+      "indexType": "u16",
+      "posOffset": 1548104,
+      "normOffset": 1552412,
+      "idxOffset": 1554568
+    },
+    {
+      "body": "forearm_link",
+      "material": "black",
+      "vertexCount": 3752,
+      "indexCount": 11088,
+      "indexType": "u16",
+      "posOffset": 1556496,
+      "normOffset": 1601520,
+      "idxOffset": 1624032
+    },
+    {
+      "body": "forearm_link",
+      "material": "jointgray",
+      "vertexCount": 4412,
+      "indexCount": 13479,
+      "indexType": "u16",
+      "posOffset": 1646208,
+      "normOffset": 1699152,
+      "idxOffset": 1725624
+    },
+    {
+      "body": "wrist_1_link",
+      "material": "black",
+      "vertexCount": 1273,
+      "indexCount": 3447,
+      "indexType": "u16",
+      "posOffset": 1752584,
+      "normOffset": 1767860,
+      "idxOffset": 1775500
+    },
+    {
+      "body": "wrist_1_link",
+      "material": "urblue",
+      "vertexCount": 6261,
+      "indexCount": 28533,
+      "indexType": "u16",
+      "posOffset": 1782396,
+      "normOffset": 1857528,
+      "idxOffset": 1895096
+    },
+    {
+      "body": "wrist_1_link",
+      "material": "jointgray",
+      "vertexCount": 5162,
+      "indexCount": 19863,
+      "indexType": "u16",
+      "posOffset": 1952164,
+      "normOffset": 2014108,
+      "idxOffset": 2045080
+    },
+    {
+      "body": "wrist_2_link",
+      "material": "black",
+      "vertexCount": 3930,
+      "indexCount": 10353,
+      "indexType": "u16",
+      "posOffset": 2084808,
+      "normOffset": 2131968,
+      "idxOffset": 2155548
+    },
+    {
+      "body": "wrist_2_link",
+      "material": "urblue",
+      "vertexCount": 5372,
+      "indexCount": 24927,
+      "indexType": "u16",
+      "posOffset": 2176256,
+      "normOffset": 2240720,
+      "idxOffset": 2272952
+    },
+    {
+      "body": "wrist_2_link",
+      "material": "jointgray",
+      "vertexCount": 5963,
+      "indexCount": 25539,
+      "indexType": "u16",
+      "posOffset": 2322808,
+      "normOffset": 2394364,
+      "idxOffset": 2430144
+    },
+    {
+      "body": "wrist_3_link",
+      "material": "linkgray",
+      "vertexCount": 1097,
+      "indexCount": 2733,
+      "indexType": "u16",
+      "posOffset": 2481224,
+      "normOffset": 2494388,
+      "idxOffset": 2500972
+    }
+  ],
+  "bodyBounds": {
+    "base": [
+      -0.075499,
+      -0.075525,
+      0.0,
+      0.075499,
+      0.075499,
+      0.099099
+    ],
+    "shoulder_link": [
+      -0.060081,
+      -0.060103,
+      -0.063901,
+      0.060099,
+      0.0744,
+      0.071524
+    ],
+    "upper_arm_link": [
+      -0.060097,
+      -0.077798,
+      -0.060601,
+      0.060097,
+      0.07183,
+      0.484592
+    ],
+    "forearm_link": [
+      -0.057792,
+      -0.056451,
+      -0.058354,
+      0.058035,
+      0.053449,
+      0.43107
+    ],
+    "wrist_1_link": [
+      -0.039343,
+      0.053449,
+      -0.056293,
+      0.039355,
+      0.165624,
+      0.053587
+    ],
+    "wrist_2_link": [
+      -0.039347,
+      -0.056732,
+      0.053587,
+      0.039349,
+      0.053148,
+      0.138782
+    ],
+    "wrist_3_link": [
+      -0.037553,
+      0.053147,
+      -0.038054,
+      0.037548,
+      0.098935,
+      0.043517
+    ]
+  }
+}

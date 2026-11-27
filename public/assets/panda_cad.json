@@ -1,0 +1,347 @@
+{
+  "source": "google-deepmind/mujoco_menagerie franka_emika_panda",
+  "totalVertices": 91958,
+  "totalTriangles": 134853,
+  "meshes": [
+    {
+      "body": "link0",
+      "material": "off_white",
+      "vertexCount": 6917,
+      "indexCount": 17835,
+      "indexType": "u16",
+      "posOffset": 0,
+      "normOffset": 83004,
+      "idxOffset": 124508
+    },
+    {
+      "body": "link0",
+      "material": "black",
+      "vertexCount": 1815,
+      "indexCount": 3303,
+      "indexType": "u16",
+      "posOffset": 160180,
+      "normOffset": 181960,
+      "idxOffset": 192852
+    },
+    {
+      "body": "link0",
+      "material": "white",
+      "vertexCount": 8927,
+      "indexCount": 40149,
+      "indexType": "u16",
+      "posOffset": 199460,
+      "normOffset": 306584,
+      "idxOffset": 360148
+    },
+    {
+      "body": "link1",
+      "material": "white",
+      "vertexCount": 6461,
+      "indexCount": 37548,
+      "indexType": "u16",
+      "posOffset": 440448,
+      "normOffset": 517980,
+      "idxOffset": 556748
+    },
+    {
+      "body": "link2",
+      "material": "white",
+      "vertexCount": 6587,
+      "indexCount": 38148,
+      "indexType": "u16",
+      "posOffset": 631844,
+      "normOffset": 710888,
+      "idxOffset": 750412
+    },
+    {
+      "body": "link3",
+      "material": "white",
+      "vertexCount": 6676,
+      "indexCount": 37272,
+      "indexType": "u16",
+      "posOffset": 826708,
+      "normOffset": 906820,
+      "idxOffset": 946876
+    },
+    {
+      "body": "link3",
+      "material": "black",
+      "vertexCount": 1596,
+      "indexCount": 5418,
+      "indexType": "u16",
+      "posOffset": 1021420,
+      "normOffset": 1040572,
+      "idxOffset": 1050148
+    },
+    {
+      "body": "link4",
+      "material": "white",
+      "vertexCount": 6964,
+      "indexCount": 38475,
+      "indexType": "u16",
+      "posOffset": 1060984,
+      "normOffset": 1144552,
+      "idxOffset": 1186336
+    },
+    {
+      "body": "link4",
+      "material": "black",
+      "vertexCount": 1591,
+      "indexCount": 5379,
+      "indexType": "u16",
+      "posOffset": 1263288,
+      "normOffset": 1282380,
+      "idxOffset": 1291928
+    },
+    {
+      "body": "link5",
+      "material": "black",
+      "vertexCount": 2584,
+      "indexCount": 9759,
+      "indexType": "u16",
+      "posOffset": 1302688,
+      "normOffset": 1333696,
+      "idxOffset": 1349200
+    },
+    {
+      "body": "link5",
+      "material": "white",
+      "vertexCount": 7835,
+      "indexCount": 45222,
+      "indexType": "u16",
+      "posOffset": 1368720,
+      "normOffset": 1462740,
+      "idxOffset": 1509752
+    },
+    {
+      "body": "link6",
+      "material": "off_white",
+      "vertexCount": 615,
+      "indexCount": 2238,
+      "indexType": "u16",
+      "posOffset": 1600196,
+      "normOffset": 1607576,
+      "idxOffset": 1611268
+    },
+    {
+      "body": "link6",
+      "material": "white",
+      "vertexCount": 9212,
+      "indexCount": 44394,
+      "indexType": "u16",
+      "posOffset": 1615744,
+      "normOffset": 1726288,
+      "idxOffset": 1781560
+    },
+    {
+      "body": "link6",
+      "material": "black",
+      "vertexCount": 5012,
+      "indexCount": 18006,
+      "indexType": "u16",
+      "posOffset": 1870348,
+      "normOffset": 1930492,
+      "idxOffset": 1960564
+    },
+    {
+      "body": "link6",
+      "material": "light_blue",
+      "vertexCount": 58,
+      "indexCount": 168,
+      "indexType": "u16",
+      "posOffset": 1996576,
+      "normOffset": 1997272,
+      "idxOffset": 1997620
+    },
+    {
+      "body": "link6",
+      "material": "green",
+      "vertexCount": 18,
+      "indexCount": 48,
+      "indexType": "u16",
+      "posOffset": 1997956,
+      "normOffset": 1998172,
+      "idxOffset": 1998280
+    },
+    {
+      "body": "link7",
+      "material": "white",
+      "vertexCount": 6960,
+      "indexCount": 25845,
+      "indexType": "u16",
+      "posOffset": 1998376,
+      "normOffset": 2081896,
+      "idxOffset": 2123656
+    },
+    {
+      "body": "link7",
+      "material": "black",
+      "vertexCount": 3555,
+      "indexCount": 10374,
+      "indexType": "u16",
+      "posOffset": 2175348,
+      "normOffset": 2218008,
+      "idxOffset": 2239340
+    },
+    {
+      "body": "hand",
+      "material": "off_white",
+      "vertexCount": 861,
+      "indexCount": 2196,
+      "indexType": "u16",
+      "posOffset": 2260088,
+      "normOffset": 2270420,
+      "idxOffset": 2275588
+    },
+    {
+      "body": "hand",
+      "material": "black",
+      "vertexCount": 3310,
+      "indexCount": 8394,
+      "indexType": "u16",
+      "posOffset": 2279980,
+      "normOffset": 2319700,
+      "idxOffset": 2339560
+    },
+    {
+      "body": "hand",
+      "material": "white",
+      "vertexCount": 2480,
+      "indexCount": 10644,
+      "indexType": "u16",
+      "posOffset": 2356348,
+      "normOffset": 2386108,
+      "idxOffset": 2400988
+    },
+    {
+      "body": "left_finger",
+      "material": "off_white",
+      "vertexCount": 581,
+      "indexCount": 1086,
+      "indexType": "u16",
+      "posOffset": 2422276,
+      "normOffset": 2429248,
+      "idxOffset": 2432736
+    },
+    {
+      "body": "left_finger",
+      "material": "black",
+      "vertexCount": 381,
+      "indexCount": 786,
+      "indexType": "u16",
+      "posOffset": 2434908,
+      "normOffset": 2439480,
+      "idxOffset": 2441768
+    },
+    {
+      "body": "right_finger",
+      "material": "off_white",
+      "vertexCount": 581,
+      "indexCount": 1086,
+      "indexType": "u16",
+      "posOffset": 2443340,
+      "normOffset": 2450312,
+      "idxOffset": 2453800
+    },
+    {
+      "body": "right_finger",
+      "material": "black",
+      "vertexCount": 381,
+      "indexCount": 786,
+      "indexType": "u16",
+      "posOffset": 2455972,
+      "normOffset": 2460544,
+      "idxOffset": 2462832
+    }
+  ],
+  "bodyBounds": {
+    "link0": [
+      -0.154086,
+      -0.094596,
+      0.0,
+      0.071544,
+      0.094573,
+      0.14
+    ],
+    "link1": [
+      -0.055015,
+      -0.129392,
+      -0.192,
+      0.055001,
+      0.055014,
+      0.055002
+    ],
+    "link2": [
+      -0.05503,
+      -0.194,
+      -0.055001,
+      0.055003,
+      0.055024,
+      0.129392
+    ],
+    "link3": [
+      -0.055013,
+      -0.055006,
+      -0.121,
+      0.137498,
+      0.111057,
+      0.055002
+    ],
+    "link4": [
+      -0.137509,
+      -0.055,
+      -0.054995,
+      0.054998,
+      0.124,
+      0.111058
+    ],
+    "link5": [
+      -0.055007,
+      -0.054995,
+      -0.259,
+      0.054989,
+      0.129935,
+      0.052199
+    ],
+    "link6": [
+      -0.047904,
+      -0.0512,
+      -0.04399,
+      0.132021,
+      0.081663,
+      0.056254
+    ],
+    "link7": [
+      -0.044026,
+      -0.044023,
+      0.052,
+      0.081307,
+      0.081274,
+      0.1068
+    ],
+    "hand": [
+      -0.03152,
+      -0.103946,
+      -0.025946,
+      0.031525,
+      0.10057,
+      0.066
+    ],
+    "left_finger": [
+      -0.010501,
+      -8.4e-05,
+      0.000133,
+      0.010502,
+      0.026345,
+      0.0539
+    ],
+    "right_finger": [
+      -0.010501,
+      -8.4e-05,
+      0.000133,
+      0.010502,
+      0.026345,
+      0.0539
+    ]
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "source": "google-deepmind/mujoco_menagerie kuka_iiwa_14",
+  "totalVertices": 46362,
+  "totalTriangles": 74471,
+  "meshes": [
+    {
+      "body": "base",
+      "material": "gray",
+      "vertexCount": 5773,
+      "indexCount": 28296,
+      "indexType": "u16",
+      "posOffset": 0,
+      "normOffset": 69276,
+      "idxOffset": 103916
+    },
+    {
+      "body": "link1",
+      "material": "gray",
+      "vertexCount": 5644,
+      "indexCount": 29772,
+      "indexType": "u16",
+      "posOffset": 160508,
+      "normOffset": 228236,
+      "idxOffset": 262100
+    },
+    {
+      "body": "link2",
+      "material": "orange",
+      "vertexCount": 2224,
+      "indexCount": 11121,
+      "indexType": "u16",
+      "posOffset": 321644,
+      "normOffset": 348332,
+      "idxOffset": 361676
+    },
+    {
+      "body": "link2",
+      "material": "gray",
+      "vertexCount": 4588,
+      "indexCount": 22119,
+      "indexType": "u16",
+      "posOffset": 383920,
+      "normOffset": 438976,
+      "idxOffset": 466504
+    },
+    {
+      "body": "link3",
+      "material": "gray",
+      "vertexCount": 5154,
+      "indexCount": 26301,
+      "indexType": "u16",
+      "posOffset": 510744,
+      "normOffset": 572592,
+      "idxOffset": 603516
+    },
+    {
+      "body": "link3",
+      "material": "light_gray",
+      "vertexCount": 755,
+      "indexCount": 1890,
+      "indexType": "u16",
+      "posOffset": 656120,
+      "normOffset": 665180,
+      "idxOffset": 669712
+    },
+    {
+      "body": "link3",
+      "material": "black",
+      "vertexCount": 204,
+      "indexCount": 576,
+      "indexType": "u16",
+      "posOffset": 673492,
+      "normOffset": 675940,
+      "idxOffset": 677164
+    },
+    {
+      "body": "link4",
+      "material": "orange",
+      "vertexCount": 1798,
+      "indexCount": 9771,
+      "indexType": "u16",
+      "posOffset": 678316,
+      "normOffset": 699892,
+      "idxOffset": 710680
+    },
+    {
+      "body": "link4",
+      "material": "gray",
+      "vertexCount": 4275,
+      "indexCount": 21645,
+      "indexType": "u16",
+      "posOffset": 730224,
+      "normOffset": 781524,
+      "idxOffset": 807176
+    },
+    {
+      "body": "link5",
+      "material": "gray",
+      "vertexCount": 2877,
+      "indexCount": 12660,
+      "indexType": "u16",
+      "posOffset": 850468,
+      "normOffset": 884992,
+      "idxOffset": 902256
+    },
+    {
+      "body": "link5",
+      "material": "light_gray",
+      "vertexCount": 755,
+      "indexCount": 1890,
+      "indexType": "u16",
+      "posOffset": 927576,
+      "normOffset": 936636,
+      "idxOffset": 941168
+    },
+    {
+      "body": "link5",
+      "material": "black",
+      "vertexCount": 204,
+      "indexCount": 576,
+      "indexType": "u16",
+      "posOffset": 944948,
+      "normOffset": 947396,
+      "idxOffset": 948620
+    },
+    {
+      "body": "link6",
+      "material": "orange",
+      "vertexCount": 1310,
+      "indexCount": 7269,
+      "indexType": "u16",
+      "posOffset": 949772,
+      "normOffset": 965492,
+      "idxOffset": 973352
+    },
+    {
+      "body": "link6",
+      "material": "gray",
+      "vertexCount": 3782,
+      "indexCount": 16233,
+      "indexType": "u16",
+      "posOffset": 987892,
+      "normOffset": 1033276,
+      "idxOffset": 1055968
+    },
+    {
+      "body": "link7",
+      "material": "gray",
+      "vertexCount": 7019,
+      "indexCount": 33294,
+      "indexType": "u16",
+      "posOffset": 1088436,
+      "normOffset": 1172664,
+      "idxOffset": 1214780
+    }
+  ],
+  "bodyBounds": {
+    "base": [
+      -0.136,
+      -0.121384,
+      0.0,
+      0.121243,
+      0.121384,
+      0.1575
+    ],
+    "link1": [
+      -0.085491,
+      -0.115686,
+      -0.01,
+      0.085491,
+      0.085487,
+      0.287984
+    ],
+    "link2": [
+      -0.085057,
+      -0.0855,
+      -0.067999,
+      0.085929,
+      0.204501,
+      0.132107
+    ],
+    "link3": [
+      -0.068,
+      -0.068,
+      -0.01,
+      0.068,
+      0.114593,
+      0.283466
+    ],
+    "link4": [
+      -0.067998,
+      -0.067993,
+      -0.068,
+      0.067998,
+      0.1845,
+      0.114579
+    ],
+    "link5": [
+      -0.068,
+      -0.068,
+      -0.01,
+      0.068247,
+      0.09902,
+      0.267007
+    ],
+    "link6": [
+      -0.06617,
+      -0.086486,
+      -0.0707,
+      0.066164,
+      0.0809,
+      0.066914
+    ],
+    "link7": [
+      -0.051854,
+      -0.051942,
+      -0.0099,
+      0.051854,
+      0.051942,
+      0.045
+    ]
+  }
+}

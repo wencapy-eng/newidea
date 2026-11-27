@@ -1,0 +1,181 @@
+{
+  "source": "google-deepmind/mujoco_menagerie aloha (ViperX 300s)",
+  "totalVertices": 128959,
+  "totalTriangles": 159251,
+  "meshes": [
+    {
+      "body": "base_link",
+      "material": "aloha_black",
+      "vertexCount": 1295,
+      "indexCount": 5994,
+      "indexType": "u16",
+      "posOffset": 0,
+      "normOffset": 15540,
+      "idxOffset": 23312
+    },
+    {
+      "body": "shoulder_link",
+      "material": "aloha_black",
+      "vertexCount": 1372,
+      "indexCount": 3828,
+      "indexType": "u16",
+      "posOffset": 35300,
+      "normOffset": 51764,
+      "idxOffset": 59996
+    },
+    {
+      "body": "upper_arm_link",
+      "material": "aloha_black",
+      "vertexCount": 2153,
+      "indexCount": 6030,
+      "indexType": "u16",
+      "posOffset": 67652,
+      "normOffset": 93488,
+      "idxOffset": 106408
+    },
+    {
+      "body": "upper_forearm_link",
+      "material": "aloha_black",
+      "vertexCount": 1052,
+      "indexCount": 2970,
+      "indexType": "u16",
+      "posOffset": 118468,
+      "normOffset": 131092,
+      "idxOffset": 137404
+    },
+    {
+      "body": "lower_forearm_link",
+      "material": "aloha_black",
+      "vertexCount": 2140,
+      "indexCount": 5988,
+      "indexType": "u16",
+      "posOffset": 143344,
+      "normOffset": 169024,
+      "idxOffset": 181864
+    },
+    {
+      "body": "wrist_link",
+      "material": "aloha_black",
+      "vertexCount": 1414,
+      "indexCount": 4074,
+      "indexType": "u16",
+      "posOffset": 193840,
+      "normOffset": 210808,
+      "idxOffset": 219292
+    },
+    {
+      "body": "gripper_base",
+      "material": "aloha_black",
+      "vertexCount": 48776,
+      "indexCount": 208617,
+      "indexType": "u16",
+      "posOffset": 227440,
+      "normOffset": 812752,
+      "idxOffset": 1105408
+    },
+    {
+      "body": "gripper_base",
+      "material": "aloha_silver",
+      "vertexCount": 13167,
+      "indexCount": 63996,
+      "indexType": "u16",
+      "posOffset": 1522644,
+      "normOffset": 1680648,
+      "idxOffset": 1759652
+    },
+    {
+      "body": "left_finger_link",
+      "material": "aloha_black",
+      "vertexCount": 28813,
+      "indexCount": 88200,
+      "indexType": "u16",
+      "posOffset": 1887644,
+      "normOffset": 2233400,
+      "idxOffset": 2406280
+    },
+    {
+      "body": "right_finger_link",
+      "material": "aloha_black",
+      "vertexCount": 28777,
+      "indexCount": 88056,
+      "indexType": "u16",
+      "posOffset": 2582680,
+      "normOffset": 2928004,
+      "idxOffset": 3100668
+    }
+  ],
+  "bodyBounds": {
+    "base_link": [
+      -0.197463,
+      -0.102,
+      -0.0,
+      0.102,
+      0.102,
+      0.078704
+    ],
+    "shoulder_link": [
+      -0.060849,
+      -0.061428,
+      -0.003,
+      0.062115,
+      0.0615,
+      0.0615
+    ],
+    "upper_arm_link": [
+      -0.01575,
+      -0.0519,
+      -0.003875,
+      0.0733,
+      0.0519,
+      0.32095
+    ],
+    "upper_forearm_link": [
+      -0.003875,
+      -0.0506,
+      -0.019449,
+      0.2,
+      0.0506,
+      0.019495
+    ],
+    "lower_forearm_link": [
+      -0.0053,
+      -0.0298,
+      -0.023,
+      0.11375,
+      0.04475,
+      0.02296
+    ],
+    "wrist_link": [
+      -0.005279,
+      -0.027661,
+      -0.020161,
+      0.069744,
+      0.027339,
+      0.035089
+    ],
+    "gripper_base": [
+      -0.075,
+      -0.11401,
+      -0.041856,
+      0.075,
+      0.030623,
+      0.021741
+    ],
+    "left_finger_link": [
+      -0.01242,
+      -0.089968,
+      -2.5e-05,
+      0.041697,
+      0.009373,
+      0.027011
+    ],
+    "right_finger_link": [
+      -0.012501,
+      -0.009373,
+      -0.000347,
+      0.04179,
+      0.089968,
+      0.026879
+    ]
+  }
+}

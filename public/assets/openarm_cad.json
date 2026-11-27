@@ -1,0 +1,287 @@
+{
+  "source": "enactic/openarm_mujoco v1.0",
+  "totalVertices": 117422,
+  "totalTriangles": 106473,
+  "meshes": [
+    {
+      "body": "openarm_link0",
+      "material": "matte_black",
+      "vertexCount": 3492,
+      "indexCount": 9672,
+      "indexType": "u16",
+      "posOffset": 0,
+      "normOffset": 41904,
+      "idxOffset": 62856
+    },
+    {
+      "body": "openarm_link0",
+      "material": "metal_silver",
+      "vertexCount": 4066,
+      "indexCount": 9318,
+      "indexType": "u16",
+      "posOffset": 82200,
+      "normOffset": 130992,
+      "idxOffset": 155388
+    },
+    {
+      "body": "openarm_link1",
+      "material": "matte_black",
+      "vertexCount": 15760,
+      "indexCount": 45555,
+      "indexType": "u16",
+      "posOffset": 174024,
+      "normOffset": 363144,
+      "idxOffset": 457704
+    },
+    {
+      "body": "openarm_link2",
+      "material": "matte_black",
+      "vertexCount": 13351,
+      "indexCount": 33456,
+      "indexType": "u16",
+      "posOffset": 548816,
+      "normOffset": 709028,
+      "idxOffset": 789136
+    },
+    {
+      "body": "openarm_link3",
+      "material": "matte_black",
+      "vertexCount": 13127,
+      "indexCount": 46299,
+      "indexType": "u16",
+      "posOffset": 856048,
+      "normOffset": 1013572,
+      "idxOffset": 1092336
+    },
+    {
+      "body": "openarm_link3",
+      "material": "metal_silver",
+      "vertexCount": 9459,
+      "indexCount": 23043,
+      "indexType": "u16",
+      "posOffset": 1184936,
+      "normOffset": 1298444,
+      "idxOffset": 1355200
+    },
+    {
+      "body": "openarm_link4",
+      "material": "matte_black",
+      "vertexCount": 11607,
+      "indexCount": 37656,
+      "indexType": "u16",
+      "posOffset": 1401288,
+      "normOffset": 1540572,
+      "idxOffset": 1610216
+    },
+    {
+      "body": "openarm_link4",
+      "material": "metal_silver",
+      "vertexCount": 7523,
+      "indexCount": 17796,
+      "indexType": "u16",
+      "posOffset": 1685528,
+      "normOffset": 1775804,
+      "idxOffset": 1820944
+    },
+    {
+      "body": "openarm_link5",
+      "material": "matte_black",
+      "vertexCount": 10355,
+      "indexCount": 28038,
+      "indexType": "u16",
+      "posOffset": 1856536,
+      "normOffset": 1980796,
+      "idxOffset": 2042928
+    },
+    {
+      "body": "openarm_link5",
+      "material": "metal_silver",
+      "vertexCount": 6514,
+      "indexCount": 15483,
+      "indexType": "u16",
+      "posOffset": 2099004,
+      "normOffset": 2177172,
+      "idxOffset": 2216256
+    },
+    {
+      "body": "openarm_link6",
+      "material": "matte_black",
+      "vertexCount": 1063,
+      "indexCount": 2649,
+      "indexType": "u16",
+      "posOffset": 2247224,
+      "normOffset": 2259980,
+      "idxOffset": 2266360
+    },
+    {
+      "body": "openarm_link6",
+      "material": "metal_silver",
+      "vertexCount": 3930,
+      "indexCount": 9096,
+      "indexType": "u16",
+      "posOffset": 2271660,
+      "normOffset": 2318820,
+      "idxOffset": 2342400
+    },
+    {
+      "body": "openarm_link7",
+      "material": "matte_black",
+      "vertexCount": 518,
+      "indexCount": 1575,
+      "indexType": "u16",
+      "posOffset": 2360592,
+      "normOffset": 2366808,
+      "idxOffset": 2369916
+    },
+    {
+      "body": "openarm_link7",
+      "material": "metal_silver",
+      "vertexCount": 4704,
+      "indexCount": 10395,
+      "indexType": "u16",
+      "posOffset": 2373068,
+      "normOffset": 2429516,
+      "idxOffset": 2457740
+    },
+    {
+      "body": "openarm_hand",
+      "material": "metal_silver",
+      "vertexCount": 2849,
+      "indexCount": 6738,
+      "indexType": "u16",
+      "posOffset": 2478532,
+      "normOffset": 2512720,
+      "idxOffset": 2529816
+    },
+    {
+      "body": "openarm_right_finger",
+      "material": "matte_black",
+      "vertexCount": 4234,
+      "indexCount": 10629,
+      "indexType": "u16",
+      "posOffset": 2543292,
+      "normOffset": 2594100,
+      "idxOffset": 2619504
+    },
+    {
+      "body": "openarm_right_finger",
+      "material": "default_material",
+      "vertexCount": 318,
+      "indexCount": 696,
+      "indexType": "u16",
+      "posOffset": 2640764,
+      "normOffset": 2644580,
+      "idxOffset": 2646488
+    },
+    {
+      "body": "openarm_left_finger",
+      "material": "matte_black",
+      "vertexCount": 4234,
+      "indexCount": 10629,
+      "indexType": "u16",
+      "posOffset": 2647880,
+      "normOffset": 2698688,
+      "idxOffset": 2724092
+    },
+    {
+      "body": "openarm_left_finger",
+      "material": "default_material",
+      "vertexCount": 318,
+      "indexCount": 696,
+      "indexType": "u16",
+      "posOffset": 2745352,
+      "normOffset": 2749168,
+      "idxOffset": 2751076
+    }
+  ],
+  "bodyBounds": {
+    "openarm_link0": [
+      -0.049,
+      -0.061,
+      0.0,
+      0.048996,
+      0.061,
+      0.0625
+    ],
+    "openarm_link1": [
+      -0.046001,
+      -0.049,
+      -0.0055,
+      0.049,
+      0.049,
+      0.109
+    ],
+    "openarm_link2": [
+      -0.0484,
+      -0.048988,
+      -0.048985,
+      0.03482,
+      0.048988,
+      0.070751
+    ],
+    "openarm_link3": [
+      -0.042509,
+      -0.041,
+      -0.00325,
+      0.034822,
+      0.0355,
+      0.182249
+    ],
+    "openarm_link4": [
+      -0.0425,
+      -0.0421,
+      -0.028496,
+      0.0325,
+      0.0421,
+      0.0995
+    ],
+    "openarm_link5": [
+      -0.0388,
+      -0.038,
+      -0.004501,
+      0.0388,
+      0.038,
+      0.1305
+    ],
+    "openarm_link6": [
+      -0.0375,
+      -0.039,
+      -0.0285,
+      0.0375,
+      0.028,
+      0.0285
+    ],
+    "openarm_link7": [
+      -0.028497,
+      -0.0285,
+      -0.0175,
+      0.028501,
+      0.0345,
+      0.0955
+    ],
+    "openarm_hand": [
+      -0.028484,
+      -0.084058,
+      -0.0106,
+      0.028486,
+      0.084058,
+      0.0204
+    ],
+    "openarm_right_finger": [
+      -0.030501,
+      -0.0275,
+      -0.0073,
+      0.030499,
+      0.005861,
+      0.085499
+    ],
+    "openarm_left_finger": [
+      -0.030499,
+      -0.005861,
+      -0.0073,
+      0.030501,
+      0.0275,
+      0.085499
+    ]
+  }
+}
