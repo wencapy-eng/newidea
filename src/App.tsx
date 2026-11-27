@@ -8,6 +8,7 @@ import {
   RotateCcw,
   Shuffle,
   Square,
+  Terminal,
 } from 'lucide-react';
 import {
   formatAblationCSV,
@@ -35,10 +36,13 @@ import type {
 import { AblationTable } from './components/AblationTable';
 import { ControlPanel } from './components/ControlPanel';
 import { DiagnosticCanvases } from './components/DiagnosticCanvases';
+import { LogViewerModal } from './components/LogViewerModal';
+import type { SingleRunErrorSample } from './components/MonteCarloHistogram';
 import { cameraCenterInBase, computePoseError, SeededRNG, type SE3 } from './math/se3';
 import { MujocoPandaEngine } from './sim/mujocoEngine';
 import { PandaRGBDScene } from './sim/rgbdScene';
 import { getRobotSpec } from './sim/robotCatalog';
+import { traceLogger, type LogSession } from './utils/traceLogger';
 
 const DEFAULT_CONFIG: CalibrationConfig = {
   algoVersion: 'v3',
@@ -103,9 +107,25 @@ export default function App() {
   const [syncDiag, setSyncDiag] = useState<SyncDiagnostics | null>(null);
   const [lmTrace, setLmTrace] = useState<LMTracePoint[]>([]);
   const [errorHistory, setErrorHistory] = useState<ErrorHistoryPoint[]>([]);
+  const [singleRunSamples, setSingleRunSamples] = useState<SingleRunErrorSample[]>([]);
   const [singleResult, setSingleResult] = useState<CalibrationResult | null>(null);
   const [ablationRows, setAblationRows] = useState<AblationRow[]>([]);
   const [copyFeedback, setCopyFeedback] = useState<string>('');
+  const [logViewerOpen, setLogViewerOpen] = useState<boolean>(false);
+  const [logSessions, setLogSessions] = useState<LogSession[]>(() => [...traceLogger.getSessions()]);
+  const [activeLogSessionId, setActiveLogSessionId] = useState<string | null>(
+    () => traceLogger.getActiveSession()?.id ?? null
+  );
+  const [totalLogCount, setTotalLogCount] = useState<number>(() => traceLogger.getTotalEntryCount());
+
+  useEffect(() => {
+    const syncLogs = () => {
+      setLogSessions([...traceLogger.getSessions()]);
+      setActiveLogSessionId(traceLogger.getActiveSession()?.id ?? null);
+      setTotalLogCount(traceLogger.getTotalEntryCount());
+    };
+    return traceLogger.subscribe(syncLogs);
+  }, []);
 
   const buildPreviewInitPose = useCallback((pose: SE3, cfg: CalibrationConfig): SE3 | null => {
     if (cfg.initMode === 'stage1') {
@@ -178,13 +198,22 @@ export default function App() {
     setAblationRows([]);
     setLmTrace([]);
     setErrorHistory([]);
+    setSingleRunSamples([]);
     setSyncDiag(null);
     setProgressText('');
     setProgressPct(0);
 
     async function boot() {
+      const tBoot = performance.now();
       try {
-        const engine = await MujocoPandaEngine.create(config.robotId);
+        const engine = await traceLogger.traceAsync(
+          'sim',
+          'MujocoPandaEngine.create',
+          { robotId: config.robotId },
+          () => MujocoPandaEngine.create(config.robotId),
+          (eng) => ({ versionLabel: eng.versionLabel, dof: eng.spec.dof, name: eng.spec.name }),
+          `初始化 MuJoCo WASM (${targetRobot.shortName})`
+        );
         if (!active) {
           engine.dispose();
           return;
@@ -206,11 +235,24 @@ export default function App() {
         sceneRef.current = rgbdScene;
 
         const initRng = new SeededRNG(20260401 + config.robotId.length * 17);
-        const initialPose = sampleRandomCameraPose(initRng, engine.spec);
+        const initialPose = traceLogger.traceCall(
+          'app',
+          'sampleRandomCameraPose',
+          { robotId: config.robotId, seed: 20260401 + config.robotId.length * 17 },
+          () => sampleRandomCameraPose(initRng, engine.spec),
+          (p) => ({ pose: p, camCenterBase: cameraCenterInBase(p) })
+        );
         gtPoseRef.current = initialPose;
 
         setEngineStatus('ready');
         setEngineMessage(`${engine.versionLabel} · WebGL2 材质光学深度`);
+        traceLogger.log(
+          'info',
+          'app',
+          'engineReady',
+          `${engine.versionLabel} 就绪 (${(performance.now() - tBoot).toFixed(0)}ms)`,
+          { durationMs: performance.now() - tBoot }
+        );
 
         captureIdlePreview(initialPose, configRef.current);
       } catch (err) {
@@ -218,6 +260,7 @@ export default function App() {
         const msg = err instanceof Error ? err.message : String(err);
         setEngineStatus('error');
         setEngineMessage(`MuJoCo WASM 加载失败: ${msg}`);
+        traceLogger.log('error', 'app', 'boot', `MuJoCo WASM 加载失败: ${msg}`, { error: msg });
       }
     }
 
@@ -259,6 +302,7 @@ export default function App() {
     setSingleResult(null);
     setLmTrace([]);
     setErrorHistory([]);
+    setSingleRunSamples([]);
     setSyncDiag(null);
     setV3PosteriorOverlay(null);
     setAblationRows([]);
@@ -314,6 +358,14 @@ export default function App() {
     );
     setProgressPct(0.02);
 
+    traceLogger.startSession({
+      title: `${verTag} 单次标定 · ${engine.spec.shortName}`,
+      kind: 'single',
+      algoVersion: config.algoVersion,
+      robotId: config.robotId,
+      configSnapshot: config,
+    });
+
     try {
       const seed = 7777 + poseCounterRef.current * 131;
       const runner =
@@ -343,6 +395,10 @@ export default function App() {
         setSingleResult(res);
         setLmTrace(res.lmTrace);
         if (res.errorHistory) setErrorHistory(res.errorHistory);
+        setSingleRunSamples((prev) => [
+          ...prev,
+          { transErrMm: res.finalTransMm, rotErrDeg: res.finalRotDeg },
+        ]);
         if (res.syncDiagnostics) setSyncDiag(res.syncDiagnostics);
         if (res.lastRgb) setLiveRgb(res.lastRgb);
         if (res.lastDepth) setLiveDepth(res.lastDepth);
@@ -352,9 +408,26 @@ export default function App() {
           `[${verTag}] ${engine.spec.shortName} 标定完成 · 最终误差 ${res.finalTransMm.toFixed(2)} mm / ${res.finalRotDeg.toFixed(3)}°`
         );
         setProgressPct(1);
+        traceLogger.endSession({
+          algoVersion: config.algoVersion,
+          robotId: config.robotId,
+          mode: config.mode,
+          initMode: config.initMode,
+          finalTransMm: res.finalTransMm,
+          finalRotDeg: res.finalRotDeg,
+          success: res.success,
+          elapsedMs: res.elapsedMs,
+        });
       } else {
         setProgressText('已中止标定');
+        traceLogger.log('warn', 'app', 'handleRunSingle', '用户手动中止单次标定');
+        traceLogger.endSession({ cancelled: true });
       }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      traceLogger.log('error', 'app', 'handleRunSingle', `标定运行异常: ${msg}`, { error: msg });
+      traceLogger.endSession({ error: msg });
+      throw err;
     } finally {
       setIsRunning(false);
     }
@@ -373,6 +446,14 @@ export default function App() {
     setV3PosteriorOverlay(null);
     setProgressText(`[${verTag}] 初始化 ${engine.spec.shortName} 6 组配对 Monte Carlo 消融实验...`);
     setProgressPct(0.01);
+
+    traceLogger.startSession({
+      title: `${verTag} 6组消融 · ${engine.spec.shortName} (N=${config.mcTrials})`,
+      kind: 'ablation',
+      algoVersion: config.algoVersion,
+      robotId: config.robotId,
+      configSnapshot: config,
+    });
 
     try {
       const benchRunner =
@@ -406,8 +487,15 @@ export default function App() {
         setAblationRows(rows);
         setProgressText(`[${verTag}] ${engine.spec.shortName} 6 组配对消融基准全部完成 (N=${config.mcTrials})`);
         setProgressPct(1);
+        traceLogger.endSession({
+          algoVersion: config.algoVersion,
+          robotId: config.robotId,
+          ablationRowCount: rows.length,
+        });
       } else {
         setProgressText('已中止消融实验');
+        traceLogger.log('warn', 'app', 'handleRunAblation', '用户手动中止消融实验');
+        traceLogger.endSession({ ablationRowCount: rows.length, cancelled: true });
       }
     } finally {
       setIsRunning(false);
@@ -611,6 +699,24 @@ export default function App() {
             )}
             {copyFeedback || '复制 Markdown 报告'}
           </button>
+
+          <button
+            type="button"
+            data-testid="open-log-viewer"
+            onClick={() => setLogViewerOpen(true)}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium rounded-sm bg-[#10151F] text-cyan-200 border border-cyan-500/45 hover:bg-cyan-500/15 hover:border-cyan-400 transition-colors whitespace-nowrap shrink-0"
+          >
+            <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+            运行日志
+            {totalLogCount > 0 && (
+              <span
+                data-testid="toolbar-log-badge"
+                className="px-1 py-0 text-[10px] font-mono rounded-[2px] bg-cyan-500/20 text-cyan-300"
+              >
+                {totalLogCount}
+              </span>
+            )}
+          </button>
         </div>
       </header>
 
@@ -625,7 +731,7 @@ export default function App() {
       )}
 
       {/* Three-Column Scientific Workstation */}
-      <main className="flex-1 grid grid-cols-1 xl:grid-cols-[302px_minmax(0,1fr)_344px] gap-3 p-3 min-h-0">
+      <main className="flex-1 grid grid-cols-1 xl:grid-cols-[282px_minmax(0,1fr)_476px] gap-3 p-3 min-h-0">
         {/* Left Column: Robot Selector, Controls & RealSense Material/Edge Noise */}
         <ControlPanel
           config={config}
@@ -711,7 +817,7 @@ export default function App() {
           />
         </div>
 
-        {/* Right Column: Live Virtual RGB, Turbo Depth + Mask / V3 EM Posterior, Sync Waveforms, Live Trans/Rot Error History */}
+        {/* Right Column: Live Virtual RGB, Turbo Depth + Mask / V3 EM Posterior, Sync Waveforms, Live Trans/Rot Error History & MC Histogram */}
         <DiagnosticCanvases
           algoVersion={config.algoVersion}
           width={config.sensor.width}
@@ -723,9 +829,19 @@ export default function App() {
           syncDiagnostics={syncDiag}
           lmTrace={lmTrace}
           errorHistory={errorHistory}
+          ablationRows={ablationRows}
+          singleRunSamples={singleRunSamples}
           isRunning={isRunning}
+          isRunningBenchmark={isRunningBenchmark}
         />
       </main>
+
+      <LogViewerModal
+        open={logViewerOpen}
+        onClose={() => setLogViewerOpen(false)}
+        sessions={logSessions}
+        activeSessionId={activeLogSessionId}
+      />
     </div>
   );
 }

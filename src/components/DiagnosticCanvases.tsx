@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SYNC_CORR_THRESHOLD } from '../calib/frontend';
 import type {
+  AblationRow,
   AlgoVersion,
   ErrorHistoryPoint,
   LMTracePoint,
@@ -12,6 +13,10 @@ import {
   normalizeErrorValue,
   summarizeErrorHistory,
 } from '../utils/errorHistory';
+import {
+  MonteCarloHistogram,
+  type SingleRunErrorSample,
+} from './MonteCarloHistogram';
 
 interface DiagnosticCanvasesProps {
   algoVersion?: AlgoVersion;
@@ -24,7 +29,10 @@ interface DiagnosticCanvasesProps {
   syncDiagnostics: SyncDiagnostics | null;
   lmTrace: LMTracePoint[];
   errorHistory?: ErrorHistoryPoint[];
+  ablationRows?: AblationRow[];
+  singleRunSamples?: SingleRunErrorSample[];
   isRunning?: boolean;
+  isRunningBenchmark?: boolean;
 }
 
 /** Authentic Google Turbo colormap polynomial approximation for x in [0, 1] -> [r, g, b] in 0..255 */
@@ -68,7 +76,10 @@ export const DiagnosticCanvases: React.FC<DiagnosticCanvasesProps> = ({
   syncDiagnostics,
   lmTrace,
   errorHistory = [],
+  ablationRows = [],
+  singleRunSamples = [],
   isRunning = false,
+  isRunningBenchmark = false,
 }) => {
   const rgbCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const depthCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -317,8 +328,8 @@ export const DiagnosticCanvases: React.FC<DiagnosticCanvasesProps> = ({
     ctx.fillStyle = '#090C12';
     ctx.fillRect(0, 0, W, H);
 
-    const padL = 40;
-    const padR = 38;
+    const padL = 34;
+    const padR = 32;
     const padT = 18;
     const padB = 22;
     const plotW = W - padL - padR;
@@ -337,14 +348,14 @@ export const DiagnosticCanvases: React.FC<DiagnosticCanvasesProps> = ({
 
     if (effectiveHistory.length === 0) {
       ctx.fillStyle = '#64748b';
-      ctx.font = '11px "JetBrains Mono", monospace';
-      ctx.fillText(
-        isRunning
-          ? '正在采集冷启动探索步，等待首次外参求解...'
-          : '运行单次标定后实时追踪平移/旋转误差收敛轨迹',
-        padL + 4,
-        padT + plotH * 0.52
-      );
+      ctx.font = '10px "JetBrains Mono", monospace';
+      if (isRunning) {
+        ctx.fillText('正在采集冷启动探索步...', padL + 4, padT + plotH * 0.44);
+        ctx.fillText('等待首次外参闭式解', padL + 4, padT + plotH * 0.64);
+      } else {
+        ctx.fillText('运行单次标定后实时绘制', padL + 4, padT + plotH * 0.44);
+        ctx.fillText('平移 / 旋转误差收敛轨迹', padL + 4, padT + plotH * 0.64);
+      }
       return;
     }
 
@@ -534,8 +545,8 @@ export const DiagnosticCanvases: React.FC<DiagnosticCanvasesProps> = ({
     if (!canvas || effectiveHistory.length === 0) return;
     const rect = canvas.getBoundingClientRect();
     if (rect.width <= 0) return;
-    const padL = 40;
-    const padR = 38;
+    const padL = 34;
+    const padR = 32;
     const plotW = canvas.width - padL - padR;
     const relX = ((e.clientX - rect.left) / rect.width) * canvas.width;
     const norm = Math.max(0, Math.min(1, (relX - padL) / Math.max(1, plotW)));
@@ -556,57 +567,63 @@ export const DiagnosticCanvases: React.FC<DiagnosticCanvasesProps> = ({
   return (
     <aside
       aria-label="传感器与算法诊断视图"
-      className="flex flex-col gap-2.5 bg-[#10151F] border border-slate-800 rounded-md p-3 overflow-y-auto"
+      className="flex flex-col gap-2.5 bg-[#10151F] border border-slate-800 rounded-md p-2.5 overflow-y-auto"
     >
-      {/* 1. Virtual RGB */}
-      <section>
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-[12px] font-semibold text-slate-200">虚拟 RealSense D435i RGB</h2>
-          <span className="text-[11px] font-mono text-slate-400">
-            {width}×{height} · FOV 58°
-          </span>
-        </div>
-        <div className="bg-[#090C12] border border-slate-800 rounded overflow-hidden">
-          <canvas
-            ref={rgbCanvasRef}
-            width={width}
-            height={height}
-            data-testid="canvas-rgb"
-            className="w-full h-auto block aspect-[4/3] max-h-[186px] object-contain"
-          />
-        </div>
-      </section>
-
-      {/* 2. Turbo Depth + Active Sub-chain / V3 EM Posterior Overlay */}
-      <section>
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-[12px] font-semibold text-slate-200">
-            {algoVersion === 'v3' && v3PosteriorOverlay
-              ? 'Turbo 深度 + V3 EM 后验分类图'
-              : 'Turbo 深度 + 活跃子链掩码'}
-          </h2>
-          <span className="text-[11px] font-mono text-cyan-300">
-            {algoVersion === 'v3' && v3PosteriorOverlay ? 'I / II / III / M_occ' : '青色 = 活跃前景'}
-          </span>
-        </div>
-        <div className="bg-[#090C12] border border-slate-800 rounded overflow-hidden">
-          <canvas
-            ref={depthCanvasRef}
-            width={width}
-            height={height}
-            data-testid="canvas-depth"
-            className="w-full h-auto block aspect-[4/3] max-h-[186px] object-contain"
-          />
-        </div>
-        {algoVersion === 'v3' && v3PosteriorOverlay && (
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] font-mono text-slate-400 mt-1">
-            <span className="text-cyan-300">■ I 名义刚体</span>
-            <span className="text-amber-300">■ II 非标刚体</span>
-            <span className="text-pink-400">■ III 柔性/离群</span>
-            <span className="text-rose-400">■ M_occ 遮挡带</span>
+      {/* Top Row: Virtual RGB & Turbo Depth / V3 EM Posterior side-by-side */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {/* 1. Virtual RGB */}
+        <section className="min-w-0">
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <h2 className="text-[11.5px] font-semibold text-slate-200 truncate">
+              虚拟 D435i RGB
+            </h2>
+            <span className="text-[10px] font-mono text-slate-400 shrink-0">
+              {width}×{height}
+            </span>
           </div>
-        )}
-      </section>
+          <div className="bg-[#090C12] border border-slate-800 rounded overflow-hidden">
+            <canvas
+              ref={rgbCanvasRef}
+              width={width}
+              height={height}
+              data-testid="canvas-rgb"
+              className="w-full h-auto block aspect-[4/3] object-contain"
+            />
+          </div>
+        </section>
+
+        {/* 2. Turbo Depth + Active Sub-chain / V3 EM Posterior Overlay */}
+        <section className="min-w-0">
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <h2 className="text-[11.5px] font-semibold text-slate-200 truncate">
+              {algoVersion === 'v3' && v3PosteriorOverlay
+                ? '深度 + V3 EM 后验'
+                : 'Turbo 深度 + 掩码'}
+            </h2>
+            <span className="text-[10px] font-mono text-cyan-300 shrink-0">
+              {algoVersion === 'v3' && v3PosteriorOverlay ? 'I/II/III/M' : '青色=前景'}
+            </span>
+          </div>
+          <div className="bg-[#090C12] border border-slate-800 rounded overflow-hidden">
+            <canvas
+              ref={depthCanvasRef}
+              width={width}
+              height={height}
+              data-testid="canvas-depth"
+              className="w-full h-auto block aspect-[4/3] object-contain"
+            />
+          </div>
+        </section>
+      </div>
+
+      {algoVersion === 'v3' && v3PosteriorOverlay && (
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[10px] font-mono text-slate-400 -mt-1 px-0.5">
+          <span className="text-cyan-300">■ I 名义刚体</span>
+          <span className="text-amber-300">■ II 非标刚体</span>
+          <span className="text-pink-400">■ III 柔性/离群</span>
+          <span className="text-rose-400">■ M_occ 遮挡带</span>
+        </div>
+      )}
 
       {/* 3. Timestamp Sync Cross-Correlation Waveform */}
       <section>
@@ -621,8 +638,8 @@ export const DiagnosticCanvases: React.FC<DiagnosticCanvasesProps> = ({
         <div className="bg-[#090C12] border border-slate-800 rounded overflow-hidden">
           <canvas
             ref={syncCanvasRef}
-            width={320}
-            height={114}
+            width={448}
+            height={116}
             data-testid="canvas-sync"
             className="w-full h-auto block"
           />
@@ -638,60 +655,65 @@ export const DiagnosticCanvases: React.FC<DiagnosticCanvasesProps> = ({
         </div>
       </section>
 
-      {/* 4. Real-Time Trans/Rot Error History Convergence Chart */}
-      <section data-testid="error-history-panel">
-        <div className="flex items-center justify-between gap-1.5 mb-1">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <h2 className="text-[12px] font-semibold text-slate-200 whitespace-nowrap">
-              Trans/Rot Error History
-            </h2>
-            {isRunning && effectiveHistory.length > 0 && (
-              <span className="text-[9.5px] font-mono text-cyan-300 px-1 py-0 bg-cyan-500/15 border border-cyan-500/40 rounded-[2px] shrink-0">
-                LIVE
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span
-              data-testid="error-history-readout"
-              className="text-[10px] font-mono text-slate-300 whitespace-nowrap"
-            >
-              {activePoint
-                ? `${activePoint.label} ${activePoint.transErrMm.toFixed(1)}mm/${activePoint.rotErrDeg.toFixed(2)}°`
-                : '等待迭代'}
-            </span>
+      {/* 4. Bottom Row: Real-Time Trans/Rot Error History + Monte Carlo Error Distribution Histogram Side-by-Side */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-0.5 border-t border-slate-800/70">
+        {/* 4A. Real-Time Trans/Rot Error History Convergence Chart */}
+        <section data-testid="error-history-panel" className="min-w-0">
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <div className="flex items-center gap-1 min-w-0">
+              <h2 className="text-[11.5px] font-semibold text-slate-200 whitespace-nowrap truncate">
+                Trans/Rot Error
+              </h2>
+              {isRunning && effectiveHistory.length > 0 && (
+                <span className="text-[9px] font-mono text-cyan-300 px-1 py-0 bg-cyan-500/15 border border-cyan-500/40 rounded-[2px] shrink-0">
+                  LIVE
+                </span>
+              )}
+            </div>
             <button
               type="button"
               data-testid="error-history-scale-toggle"
               aria-label="切换误差折线图线性或对数纵轴"
               onClick={() => setUseLogScale((v) => !v)}
-              className="px-1.5 py-0.5 text-[9.5px] font-mono rounded-[2px] bg-[#090C12] border border-slate-700 text-slate-300 hover:text-cyan-200 hover:border-cyan-500/60 transition-colors"
+              className="px-1.5 py-0.5 text-[9.5px] font-mono rounded-[2px] bg-[#090C12] border border-slate-700 text-slate-300 hover:text-cyan-200 hover:border-cyan-500/60 transition-colors shrink-0"
             >
               {useLogScale ? 'Log' : 'Lin'}
             </button>
           </div>
-        </div>
-        <div className="bg-[#090C12] border border-slate-800 rounded overflow-hidden">
-          <canvas
-            ref={historyCanvasRef}
-            width={320}
-            height={116}
-            data-testid="canvas-error-history"
-            data-points={effectiveHistory.length}
-            data-scale={useLogScale ? 'log' : 'lin'}
-            onMouseMove={handleHistoryMouseMove}
-            onMouseLeave={() => setHoverIdx(null)}
-            className="w-full h-auto block cursor-crosshair"
-          />
-        </div>
-        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mt-0.5">
-          <span className="text-cyan-400">— 平移误差 (mm)</span>
-          <span className="text-slate-500">
-            {effectiveHistory.length > 0 ? `${effectiveHistory.length} pts` : '实时轨迹'}
-          </span>
-          <span className="text-amber-400">— 旋转误差 (deg)</span>
-        </div>
-      </section>
+          <div className="bg-[#090C12] border border-slate-800 rounded overflow-hidden">
+            <canvas
+              ref={historyCanvasRef}
+              width={230}
+              height={116}
+              data-testid="canvas-error-history"
+              data-points={effectiveHistory.length}
+              data-scale={useLogScale ? 'log' : 'lin'}
+              onMouseMove={handleHistoryMouseMove}
+              onMouseLeave={() => setHoverIdx(null)}
+              className="w-full h-auto block cursor-crosshair"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-1 text-[9.5px] font-mono text-slate-400 mt-0.5">
+            <span className="text-cyan-400 shrink-0">— mm</span>
+            <span
+              data-testid="error-history-readout"
+              className="text-slate-300 truncate"
+            >
+              {activePoint
+                ? `${activePoint.label} ${activePoint.transErrMm.toFixed(1)}mm/${activePoint.rotErrDeg.toFixed(2)}°`
+                : '等待迭代'}
+            </span>
+            <span className="text-amber-400 shrink-0">— deg</span>
+          </div>
+        </section>
+
+        {/* 4B. Monte Carlo Final Pose Error Distribution Histogram */}
+        <MonteCarloHistogram
+          ablationRows={ablationRows}
+          singleRunSamples={singleRunSamples}
+          isRunningBenchmark={isRunningBenchmark}
+        />
+      </div>
     </aside>
   );
 };

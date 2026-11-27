@@ -39,6 +39,7 @@ import {
   type LiveStepUpdate,
 } from '../pipeline';
 import { appendErrorHistoryPoint } from '../../utils/errorHistory';
+import { traceLogger } from '../../utils/traceLogger';
 import type {
   AblationRow,
   CalibrationConfig,
@@ -257,17 +258,50 @@ export async function runSingleCalibrationV3(
   const useExternalInit = config.initMode !== 'stage1';
   const isParallelDelta = engine.spec.mechanism === 'parallel_delta';
 
+  traceLogger.log(
+    'stage',
+    'pipelineV3',
+    'runSingleCalibrationV3',
+    `[V3] 启动 ${engine.spec.shortName} 统一引擎标定 (${config.mode} / ${config.strategy} / ${config.initMode})`,
+    {
+      input: {
+        robotId: config.robotId,
+        mode: config.mode,
+        strategy: config.strategy,
+        initMode: config.initMode,
+        numSteps: config.numSteps,
+        useDualExclusion,
+        estimateTimeOffset: config.estimateTimeOffset,
+        seed,
+        fastMode,
+        T_cb_gt,
+        sensor: config.sensor,
+      },
+    }
+  );
+
   const externalInitPose: SE3 | null = useExternalInit
     ? opts?.externalInitPose
       ? cloneSE3(opts.externalInitPose)
-      : generateInitialHandEyePose(
-          config.initMode as Exclude<ExtrinsicInitMode, 'stage1'>,
-          T_cb_gt,
-          new SeededRNG((seed ^ 0x9e3779b9) >>> 0),
+      : traceLogger.traceCall(
+          'pipelineV3',
+          'generateInitialHandEyePose',
           {
+            initMode: config.initMode,
             rotErrDeg: config.initRotErrDeg,
             transErrMm: config.initTransErrMm,
-          }
+          },
+          () =>
+            generateInitialHandEyePose(
+              config.initMode as Exclude<ExtrinsicInitMode, 'stage1'>,
+              T_cb_gt,
+              new SeededRNG((seed ^ 0x9e3779b9) >>> 0),
+              {
+                rotErrDeg: config.initRotErrDeg,
+                transErrMm: config.initTransErrMm,
+              }
+            ),
+          (pose) => ({ pose, initError: computePoseError(pose, T_cb_gt) })
         )
     : null;
 
@@ -281,8 +315,20 @@ export async function runSingleCalibrationV3(
   });
   rgbdScene.setFrustumPoses(T_cb_gt, externalInitPose, null);
 
-  const coldStart = buildColdStartActions(engine);
-  const candidatePool = buildSafeCandidatePool(engine);
+  const coldStart = traceLogger.traceCall(
+    'fimV3',
+    'buildColdStartActions',
+    { robotId: engine.spec.id, dof: engine.spec.dof },
+    () => buildColdStartActions(engine),
+    (acts) => ({ count: acts.length, ids: acts.map((a) => a.id) })
+  );
+  const candidatePool = traceLogger.traceCall(
+    'fimV3',
+    'buildSafeCandidatePool',
+    { robotId: engine.spec.id, dof: engine.spec.dof },
+    () => buildSafeCandidatePool(engine),
+    (acts) => ({ count: acts.length, ids: acts.map((a) => a.id) })
+  );
   const totalSteps = Math.max(4, Math.min(8, config.numSteps));
 
   const usedIds = new Set<string>();
@@ -338,6 +384,7 @@ export async function runSingleCalibrationV3(
     const xiBasePerFrame: Vec6[] = [];
     const delaySec = Math.max(0, config.sensor.asyncDelayMs) / 1000;
 
+    const actionT0 = performance.now();
     for (let f = 0; f < FRAMES_PER_ACTION; f++) {
       if (opts?.shouldCancel?.()) break;
       const tLocal = f * FRAME_DT_SEC;
@@ -397,12 +444,60 @@ export async function runSingleCalibrationV3(
 
     tGlobal += FRAMES_PER_ACTION * FRAME_DT_SEC + 0.15;
 
+    if (!fastMode) {
+      traceLogger.recordCall(
+        'sim',
+        'captureActionSequenceV3',
+        {
+          stepIdx,
+          isColdProbe,
+          actionId: action.id,
+          label: action.label,
+          jointIndex: action.jointIndex,
+          qStart: action.qStart,
+          qEnd: action.qEnd,
+          asyncDelayMs: config.sensor.asyncDelayMs,
+        },
+        {
+          frameCount: frames.length,
+          midDepthSummary: frames[Math.floor(frames.length / 2)]?.depth,
+          xiBaseMid: xiBasePerFrame[Math.floor(xiBasePerFrame.length / 2)],
+        },
+        performance.now() - actionT0,
+        `[V3] 采集动作 ${action.label} (${frames.length} 帧 RGB-D)`
+      );
+    }
+
     // V3 Stage 1: Dual-Domain (2D M_occ_2D + 3D V_static) + Multi-Fragment Sync Aggregation
-    const seg = segmentActionV3MultiFragment(frames, K, action.label, {
-      useTimestampSync: config.useTimestampSync,
-      useDualExclusion,
-      globalEnvelope,
-    });
+    const seg = !fastMode
+      ? traceLogger.traceCall(
+          'frontendV3',
+          'segmentActionV3MultiFragment',
+          {
+            actionLabel: action.label,
+            frameCount: frames.length,
+            useTimestampSync: config.useTimestampSync,
+            useDualExclusion,
+          },
+          () =>
+            segmentActionV3MultiFragment(frames, K, action.label, {
+              useTimestampSync: config.useTimestampSync,
+              useDualExclusion,
+              globalEnvelope,
+            }),
+          (res) => ({
+            diagnostics: res.diagnostics,
+            midFrameMaskPx: res.frameMasks[Math.floor(res.frameMasks.length / 2)]?.reduce(
+              (acc, v) => acc + (v ? 1 : 0),
+              0
+            ),
+          })
+        )
+      : segmentActionV3MultiFragment(frames, K, action.label, {
+          useTimestampSync: config.useTimestampSync,
+          useDualExclusion,
+          globalEnvelope,
+        });
     lastSyncDiag = seg.diagnostics;
 
     if (config.useTimestampSync) {
@@ -423,14 +518,39 @@ export async function runSingleCalibrationV3(
     // Extract optical-weighted clouds across sweep frames for Stage 2 GNC-Welsch ICP
     const startIdx = PRE_PAUSE_FRAMES - 1;
     const endIdx = PRE_PAUSE_FRAMES + SWEEP_FRAMES;
-    const sweepClouds = frames.map((fr, idx) => {
-      if (idx < startIdx || idx > endIdx) return [];
-      return extractV3OpticalWeightedCloud(fr.depth, seg.frameMasks[idx], K, {
-        filterEnabled: config.useFlyingPixelFilter,
-        sigmaZ0: config.sensor.sigmaZ0,
-        maxPoints: 760,
-      });
-    });
+    const sweepClouds = !fastMode
+      ? traceLogger.traceCall(
+          'frontendV3',
+          'extractV3OpticalWeightedCloudBatch',
+          {
+            startIdx,
+            endIdx,
+            filterEnabled: config.useFlyingPixelFilter,
+            sigmaZ0: config.sensor.sigmaZ0,
+            maxPoints: 760,
+          },
+          () =>
+            frames.map((fr, idx) => {
+              if (idx < startIdx || idx > endIdx) return [];
+              return extractV3OpticalWeightedCloud(fr.depth, seg.frameMasks[idx], K, {
+                filterEnabled: config.useFlyingPixelFilter,
+                sigmaZ0: config.sensor.sigmaZ0,
+                maxPoints: 760,
+              });
+            }),
+          (clouds) => ({
+            perFramePointCounts: clouds.map((c) => c.length),
+            totalPoints: clouds.reduce((s, c) => s + c.length, 0),
+          })
+        )
+      : frames.map((fr, idx) => {
+          if (idx < startIdx || idx > endIdx) return [];
+          return extractV3OpticalWeightedCloud(fr.depth, seg.frameMasks[idx], K, {
+            filterEnabled: config.useFlyingPixelFilter,
+            sigmaZ0: config.sensor.sigmaZ0,
+            maxPoints: 760,
+          });
+        });
 
     const qStartEnc = frames[startIdx].qEncoder[action.jointIndex];
     const qEndEnc = frames[endIdx].qEncoder[action.jointIndex];
@@ -452,28 +572,59 @@ export async function runSingleCalibrationV3(
           pEndB[1] - pStartB[1],
           pEndB[2] - pStartB[2],
         ];
-        const res = extractV3ParallelTranslationFromSweep(
-          action,
-          sweepClouds,
-          startIdx,
-          endIdx,
-          deltaPBase,
-          pMidB,
-          deltaQ
-        );
+        const res = !fastMode
+          ? traceLogger.traceCall(
+              'stage2V3',
+              'extractV3ParallelTranslationFromSweep',
+              { actionId: action.id, deltaPBase, pMidB, deltaQ },
+              () =>
+                extractV3ParallelTranslationFromSweep(
+                  action,
+                  sweepClouds,
+                  startIdx,
+                  endIdx,
+                  deltaPBase,
+                  pMidB,
+                  deltaQ
+                )
+            )
+          : extractV3ParallelTranslationFromSweep(
+              action,
+              sweepClouds,
+              startIdx,
+              endIdx,
+              deltaPBase,
+              pMidB,
+              deltaQ
+            );
         screwObs = res.obs;
         pointCount = res.pointCount;
         ampResidual = res.ampErrMm;
       }
     } else {
-      const res = extractV3ScrewObservationFromSweep(
-        action,
-        sweepClouds,
-        startIdx,
-        endIdx,
-        xiBaseMid,
-        deltaQ
-      );
+      const res = !fastMode
+        ? traceLogger.traceCall(
+            'stage2V3',
+            'extractV3ScrewObservationFromSweep',
+            { actionId: action.id, xiBaseMid, deltaQ, startIdx, endIdx },
+            () =>
+              extractV3ScrewObservationFromSweep(
+                action,
+                sweepClouds,
+                startIdx,
+                endIdx,
+                xiBaseMid,
+                deltaQ
+              )
+          )
+        : extractV3ScrewObservationFromSweep(
+            action,
+            sweepClouds,
+            startIdx,
+            endIdx,
+            xiBaseMid,
+            deltaQ
+          );
       screwObs = res.obs;
       pointCount = res.pointCount;
       ampResidual = res.ampErrDeg;
@@ -481,13 +632,33 @@ export async function runSingleCalibrationV3(
 
     let acceptedProbe = true;
     if (isColdProbe) {
-      const gateLog = evaluateBlindProbeGates(
-        screwObs,
-        pointCount,
-        ampResidual,
-        acceptedColdAxes,
-        isDeltaTrans
-      );
+      const gateLog = !fastMode
+        ? traceLogger.traceCall(
+            'stage2V3',
+            'evaluateBlindProbeGates',
+            {
+              actionId: action.id,
+              pointCount,
+              ampResidual,
+              acceptedAxesCount: acceptedColdAxes.length,
+              isDeltaTrans,
+            },
+            () =>
+              evaluateBlindProbeGates(
+                screwObs,
+                pointCount,
+                ampResidual,
+                acceptedColdAxes,
+                isDeltaTrans
+              )
+          )
+        : evaluateBlindProbeGates(
+            screwObs,
+            pointCount,
+            ampResidual,
+            acceptedColdAxes,
+            isDeltaTrans
+          );
       probeLogs.push(gateLog);
       acceptedProbe = gateLog.accepted;
       if (gateLog.accepted && screwObs) {
@@ -503,7 +674,15 @@ export async function runSingleCalibrationV3(
     }
 
     if (!externalInitPose && screwObservations.length >= 3) {
-      T_cb_stage2 = solveV3GeneralizedScrewClosedForm(screwObservations, isParallelDelta);
+      T_cb_stage2 = !fastMode
+        ? traceLogger.traceCall(
+            'stage2V3',
+            'solveV3GeneralizedScrewClosedForm',
+            { obsCount: screwObservations.length, isParallelDelta, stepIdx },
+            () => solveV3GeneralizedScrewClosedForm(screwObservations, isParallelDelta),
+            (pose) => ({ pose, error: computePoseError(pose, T_cb_gt) })
+          )
+        : solveV3GeneralizedScrewClosedForm(screwObservations, isParallelDelta);
       const stepErr = computePoseError(T_cb_stage2, T_cb_gt);
       errorHistory = appendErrorHistoryPoint(errorHistory, {
         label: `S${stepIdx + 1}`,
@@ -579,19 +758,54 @@ export async function runSingleCalibrationV3(
     staticZBuf = env.dMax;
     staticDMin = env.dMin;
 
-    const pick = selectNextActionV3(
-      engine,
-      candidatePool,
-      usedIds,
-      config.strategy,
-      I_acc,
-      T_cb_stage2,
-      K,
-      config.sensor.sigmaZ0,
-      useDualExclusion ? staticZBuf : null,
-      config.useVelocityField,
-      rng
-    );
+    const pick = !fastMode
+      ? traceLogger.traceCall(
+          'fimV3',
+          'selectNextActionV3',
+          {
+            step,
+            strategy: config.strategy,
+            remainingCandidates: candidatePool.length - usedIds.size,
+            useDualExclusion,
+            useVelocityField: config.useVelocityField,
+          },
+          () =>
+            selectNextActionV3(
+              engine,
+              candidatePool,
+              usedIds,
+              config.strategy,
+              I_acc,
+              T_cb_stage2!,
+              K,
+              config.sensor.sigmaZ0,
+              useDualExclusion ? staticZBuf : null,
+              config.useVelocityField,
+              rng
+            ),
+          (res) =>
+            res
+              ? {
+                  selectedId: res.action.id,
+                  label: res.action.label,
+                  occludedCount: res.fimRes.occludedCount,
+                  totalFovCount: res.fimRes.totalFovCount,
+                }
+              : null
+        )
+      : selectNextActionV3(
+          engine,
+          candidatePool,
+          usedIds,
+          config.strategy,
+          I_acc,
+          T_cb_stage2,
+          K,
+          config.sensor.sigmaZ0,
+          useDualExclusion ? staticZBuf : null,
+          config.useVelocityField,
+          rng
+        );
     if (!pick) break;
 
     await executeOneActionV3(pick.action, step, false);
@@ -628,7 +842,15 @@ export async function runSingleCalibrationV3(
   const finalEnv = globalEnvelope.getEnvelopes();
   staticZBuf = finalEnv.dMax;
   staticDMin = finalEnv.dMin;
-  const globalOcc2D = buildDepthConditionedOcc2DBand(staticZBuf, staticDMin, K.width, K.height);
+  const globalOcc2D = !fastMode
+    ? traceLogger.traceCall(
+        'frontendV3',
+        'buildDepthConditionedOcc2DBand',
+        { width: K.width, height: K.height },
+        () => buildDepthConditionedOcc2DBand(staticZBuf, staticDMin, K.width, K.height),
+        (res) => ({ bandPixelCount: res.bandPixelCount })
+      )
+    : buildDepthConditionedOcc2DBand(staticZBuf, staticDMin, K.width, K.height);
   const globalVStatic = new StaticVoxelExclusion3D(V3_STATIC_VOXEL_RADIUS_M);
   globalVStatic.buildFromStaticEnvelope(staticZBuf, K, 2);
 
@@ -751,12 +973,33 @@ export async function runSingleCalibrationV3(
     let stage4DeltaTSec = 0;
 
     if (fastMode) {
-      const stage4Res = runStage4AnnealedEmLM(
-        initPoseForStage4,
-        staticObs,
-        dynObsAll,
-        dynFrameGridsAll,
-        stage4Opts
+      const stage4Res = traceLogger.traceCall(
+        'stage4V3',
+        'runStage4AnnealedEmLM',
+        {
+          staticFrames: staticObs.length,
+          dynObsCount: dynObsAll.length,
+          temperatures: temps,
+          gates,
+          itersPerStage: iters,
+          estimateTimeOffset: config.estimateTimeOffset,
+          initErr,
+        },
+        () =>
+          runStage4AnnealedEmLM(
+            initPoseForStage4,
+            staticObs,
+            dynObsAll,
+            dynFrameGridsAll,
+            stage4Opts
+          ),
+        (res) => ({
+          iters: res.trace.length,
+          classPriors: res.classPriors,
+          classCounts: res.classCounts,
+          estimatedDelayMs: res.deltaTSec * 1000,
+          finalErr: computePoseError(res.T_est, T_cb_gt),
+        })
       );
       finalPose = stage4Res.T_est;
       lmTrace = stage4Res.trace;
@@ -775,6 +1018,25 @@ export async function runSingleCalibrationV3(
         });
       }
     } else {
+      traceLogger.log(
+        'stage',
+        'stage4V3',
+        'iterateStage4AnnealedEmLM',
+        `[V3] Stage 4 退火 EM-LM 开始 (${staticObs.length} 静态帧 / ${dynObsAll.length} SG 动态观测)`,
+        {
+          input: {
+            staticFrameCount: staticObs.length,
+            staticPointTotal: staticObs.reduce((s, f) => s + f.points.length, 0),
+            dynObsCount: dynObsAll.length,
+            temperatures: temps,
+            gates,
+            itersPerStage: iters,
+            estimateTimeOffset: config.estimateTimeOffset,
+            initPose: initPoseForStage4,
+            initErr,
+          },
+        }
+      );
       const totalPlannedIters = iters.reduce((s, n) => s + n, 0);
       const gen = iterateStage4AnnealedEmLM(
         initPoseForStage4,
@@ -783,16 +1045,38 @@ export async function runSingleCalibrationV3(
         dynFrameGridsAll,
         stage4Opts
       );
+      let iterT0 = performance.now();
       let iterRes = gen.next();
       let liveTrace: LMTracePoint[] = [];
       let livePose = initPoseForStage4;
       while (!iterRes.done) {
         if (opts?.shouldCancel?.()) break;
         const step = iterRes.value;
+        const iterDur = performance.now() - iterT0;
         livePose = step.T_est;
         liveTrace = step.trace;
         classPriors = step.classPriors;
         stage4DeltaTSec = step.deltaTSec;
+        traceLogger.recordCall(
+          'stage4V3',
+          'stage4EmLM_iter',
+          {
+            iter: step.point.iter,
+            stage: step.point.stage,
+            lambda: step.point.lambda,
+          },
+          {
+            cost: step.point.cost,
+            geoCount: step.point.geoCount,
+            velCount: step.point.velCount,
+            classPriors: step.classPriors,
+            estimatedDelayMs: step.deltaTSec * 1000,
+            transErrMm: step.point.transErrMm,
+            rotErrDeg: step.point.rotErrDeg,
+          },
+          iterDur,
+          `EM-LM Iter ${step.point.iter} (T-Stage ${step.point.stage}): ${step.point.transErrMm.toFixed(2)}mm / ${step.point.rotErrDeg.toFixed(3)}°`
+        );
         errorHistory = appendErrorHistoryPoint(errorHistory, {
           label: `EM${step.point.iter}`,
           phase: 'em_lm',
@@ -812,6 +1096,7 @@ export async function runSingleCalibrationV3(
           errorHistory: [...errorHistory],
         });
         await nextAnimationFrame();
+        iterT0 = performance.now();
         iterRes = gen.next();
       }
       if (iterRes.done && iterRes.value) {
@@ -831,18 +1116,42 @@ export async function runSingleCalibrationV3(
     if (allActionFrames.length > 0) {
       const lastActIdx = allActionFrames.length - 1;
       const midIdx = Math.floor(FRAMES_PER_ACTION / 2);
-      posteriorOverlay = buildDensePosteriorOverlay(
-        allActionFrames[lastActIdx],
-        allActionMasks[lastActIdx],
-        allActionXiBase[lastActIdx],
-        midIdx,
-        useDualExclusion ? globalOcc2D : null,
-        engine,
-        finalPose,
-        stage4DeltaTSec,
-        classPriors,
-        K
-      );
+      posteriorOverlay = !fastMode
+        ? traceLogger.traceCall(
+            'stage4V3',
+            'buildDensePosteriorOverlay',
+            { lastActIdx, midIdx, deltaTSec: stage4DeltaTSec, classPriors },
+            () =>
+              buildDensePosteriorOverlay(
+                allActionFrames[lastActIdx],
+                allActionMasks[lastActIdx],
+                allActionXiBase[lastActIdx],
+                midIdx,
+                useDualExclusion ? globalOcc2D : null,
+                engine,
+                finalPose,
+                stage4DeltaTSec,
+                classPriors,
+                K
+              ),
+            (ov) => {
+              const hist = [0, 0, 0, 0, 0];
+              for (let i = 0; i < ov.length; i++) hist[ov[i]] = (hist[ov[i]] ?? 0) + 1;
+              return { bgPx: hist[0], classIPx: hist[1], classIIPx: hist[2], classIIIPx: hist[3], occ2DPx: hist[4] };
+            }
+          )
+        : buildDensePosteriorOverlay(
+            allActionFrames[lastActIdx],
+            allActionMasks[lastActIdx],
+            allActionXiBase[lastActIdx],
+            midIdx,
+            useDualExclusion ? globalOcc2D : null,
+            engine,
+            finalPose,
+            stage4DeltaTSec,
+            classPriors,
+            K
+          );
     }
   } else if (allActionFrames.length > 0 && useDualExclusion) {
     // Mode A still shows 2D front-occlusion band M_occ_2D on the diagnostic depth canvas
@@ -881,6 +1190,34 @@ export async function runSingleCalibrationV3(
     probeLogs,
     posteriorOverlay,
   };
+
+  traceLogger.log(
+    'metric',
+    'pipelineV3',
+    'runSingleCalibrationV3',
+    `[V3] 标定完成: ${finalErr.transMm.toFixed(2)}mm / ${finalErr.rotDeg.toFixed(3)}° (${success ? '合格' : '发散'})`,
+    {
+      durationMs: elapsedMs,
+      output: {
+        initTransMm: initErr.transMm,
+        initRotDeg: initErr.rotDeg,
+        stage2TransMm: stage2Err.transMm,
+        stage2RotDeg: stage2Err.rotDeg,
+        finalTransMm: finalErr.transMm,
+        finalRotDeg: finalErr.rotDeg,
+        fimLogDet: fimMetrics.logDet,
+        fimLambdaMin: fimMetrics.lambdaMin,
+        estimatedDelayMs,
+        classPriors,
+        classCounts,
+        zBufferOccludedPct: v3Diagnostics.zBufferOccludedPct,
+        occ2DBandPixels: v3Diagnostics.occ2DBandPixels,
+        probeLogs,
+        success,
+        T_cb_final: finalPose,
+      },
+    }
+  );
 
   opts?.onLiveUpdate?.({
     phaseText: `[V3] 标定完成 (${finalErr.transMm.toFixed(2)}mm / ${finalErr.rotDeg.toFixed(3)}°)`,
@@ -1142,7 +1479,7 @@ export async function runPairedAblationBenchmarkV3(
       const timeStat = computeMeanStd(timesMs);
       const fimStat = computeMeanStd(fimLogs);
 
-      rows.push({
+      const row: AblationRow = {
         id: spec.id,
         name: spec.name,
         shortDesc: spec.shortDesc,
@@ -1157,6 +1494,11 @@ export async function runPairedAblationBenchmarkV3(
         fimLogDetMean: fimStat.mean,
         trialRotDegs: rotDegs,
         trialTransMms: transMms,
+      };
+      rows.push(row);
+
+      traceLogger.log('metric', 'ablationV3', 'conditionComplete', `[V3 消融] 完成条件 ${cIdx + 1}/6: ${spec.name}`, {
+        output: row,
       });
 
       opts.onProgress({
